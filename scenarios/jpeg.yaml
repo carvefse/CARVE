@@ -1,0 +1,67 @@
+version: 1
+name: first-jpeg-while-parked
+duration_s: 30
+
+baseline:
+  restore: false
+  packages: [com.example.jpegcve]
+  checks:
+    - parked
+    - vhal_parked
+    - speed_zero
+    - gear_park
+    - ux_unrestricted
+    - workload_absent
+
+context:
+  route: null
+  verify: true
+  vehicle_states:
+    - {state: PARK, start: 0, end: 30}
+
+actions:
+  - id: jpeg_decode
+    role: target
+    phase: payload
+    start: 7
+    stop: 23
+    driver: activity
+    apk: ../attack_apps/apks/jpegcve.apk
+    package: com.example.jpegcve
+    component: com.example.jpegcve/.MainActivity
+    provision:
+      - am force-stop com.example.jpegcve
+    # MainActivity.onCreate() reads these as Intent extras to control the workload.
+    # Names come from its EXTRA_* constants; types match its get*Extra() calls.
+    # They belong here because they are app inputs passed when CARVE launches it.
+    extras:
+    # Intent commands
+      com.example.jpegcve.extra.AUTORUN: {type: bool, value: true}
+      com.example.jpegcve.extra.START_DELAY_MS: {type: long, value: 0}
+      com.example.jpegcve.extra.FINISH_AFTER_RUN: {type: bool, value: true}
+      com.example.jpegcve.extra.LOAD_FIRST: {type: bool, value: true}
+      com.example.jpegcve.extra.STRESS_ITERATIONS: {type: int, value: 4}
+      com.example.jpegcve.extra.STRESS_DELAY_MS: {type: long, value: 100}
+    evidence:
+      start: 'CARVE_PAYLOAD_START family=jpegcve\b'
+      progress: 'CARVE_PAYLOAD_PROGRESS family=jpegcve iteration=(?P<count>\d+) bytes=[1-9]\d*'
+      min_progress: 4
+      min_counter: 4
+      complete: 'CARVE_PAYLOAD_END family=jpegcve success=true completed=4 requested=4\b'
+      process: com.example.jpegcve
+
+observation:
+  trace: ../configs/perfetto.pbtxt
+  pre_roll_s: 1
+  post_roll_s: 1
+  phases:
+    - {id: pre_payload,  start: 0,  end: 5}
+    - {id: payload,      start: 5,  end: 25}
+    - {id: post_payload, start: 25, end: 30}
+
+policy:
+  require_baseline: true
+  require_context: true
+  require_actions: true
+  require_trace: true
+  require_route: false

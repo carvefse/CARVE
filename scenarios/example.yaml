@@ -1,0 +1,40 @@
+# Bounded, benign shell I/O; this example requires no APK.
+version: 1
+name: benign-io
+duration_s: 12
+baseline:
+  restore: false              # Set true and name your own clean snapshot for restored runs.
+context:
+  route: null                # Stationary example: no GPS injection is requested.
+  vehicle_states:
+    - {state: PARK, start: 0, end: 12}
+actions:
+  - id: io
+    role: target
+    driver: shell
+    phase: payload
+    start: 3
+    stop: 9
+    command: >-
+      log -t CARVE_DEMO 'run={run_id} action={action_id} start';
+      i=0; while [ "$i" -lt 4 ]; do
+      head -c 4096 /dev/zero > /data/local/tmp/carve/{run_id}/demo.bin &&
+      test "$(wc -c < /data/local/tmp/carve/{run_id}/demo.bin)" -eq 4096 &&
+      log -t CARVE_DEMO "run={run_id} action={action_id} progress=$i";
+      i=$((i+1)); sleep 0.5; done;
+      log -t CARVE_DEMO 'run={run_id} action={action_id} complete'
+    evidence:
+      start: 'run={run_id} action=io start'
+      progress: 'run={run_id} action=io progress=\d+'
+      complete: 'run={run_id} action=io complete'
+      min_progress: 4
+observation:
+  trace: ../configs/perfetto.pbtxt
+  pre_roll_s: 1
+  post_roll_s: 1
+  phases:
+    - {id: pre_payload, start: 0, end: 2}
+    - {id: payload, start: 2, end: 10}
+    - {id: post_payload, start: 10, end: 12}
+policy:
+  require_route: false

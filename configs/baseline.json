@@ -1,0 +1,20 @@
+{
+  "name": "AAOS 12L rooted emulator",
+  "services": ["activity", "package", "car_service"],
+  "root_shell": ["su", "0", "sh", "-c"],
+  "vhal_service": "android.hardware.automotive.vehicle@2.0::IVehicle/default",
+  "vehicle": {
+    "speed_property": "0x11600207",
+    "gear_properties": ["0x11400400", "0x11400401"],
+    "driving_service": "CarDrivingStateService",
+    "ux_service": "CarUxRestrictionsManagerService",
+    "ux_display_port": 0,
+    "speed_tolerance_mps": 0.01,
+    "states": {
+      "PARK": {"gear": 4, "driving": 0, "requires_do": false, "default_speed_mps": 0},
+      "DRIVE": {"gear": 8, "driving": 2, "requires_do": true, "default_speed_mps": 10}
+    }
+  },
+  "checks": ["parked", "vhal_parked", "speed_zero", "gear_park", "ux_unrestricted"],
+  "readiness_timeout_s": 60
+}

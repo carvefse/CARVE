@@ -1,0 +1,11 @@
+.DS_Store
+tests
+Archive.zip
+
+**/build/
+**/.gradle/
+**/.kotlin/
+**/local.properties
+**/.DS_Store
+**/__pycache__/
+*.pem
